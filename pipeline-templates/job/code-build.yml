@@ -13,7 +13,7 @@ jobs:
   steps:
   - template: /azure-pipelines-templates/build/step/gitversion.yml
 
-  steps:
+  
 - task: UseDotNet@2
   displayName: 'Use .NET Core sdk 6.0.x'
   inputs:
