@@ -20,8 +20,8 @@ resources:
 stages:
 - stage: Build and Unit Tests
   jobs:
-  - template: pipeline-templates/job/code-build.yml
-  - template: pipeline-templates/job/unit-tests.yml
+  - template: pipeline-templates/job/codebuild.yml
+  - template: pipeline-templates/job/unittests.yml
 
 - stage: Deploy_DST
   displayName: 'Deploy to DST'
