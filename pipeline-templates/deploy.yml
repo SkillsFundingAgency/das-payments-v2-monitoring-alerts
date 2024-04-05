@@ -23,7 +23,7 @@ jobs:
         - task: AzureFunctionApp@1
           displayName: 'Azure Function App Deploy: DCOL-SDW-MonitoringAlerts1-WEU'
           inputs:
-            azureSubscription: 'DCOL-Shadow'
+            azureSubscription: ${{ parameters.azureSubscription }}
             appType: functionApp
-            appName: 'DCOL-SDW-MonitoringAlerts1-WEU'
+            appName: ${{ parameters.appName }}
             package: '$(System.DefaultWorkingDirectory)/Monitoring-Alerts-FunctionApp/MonitoringAlertsFunctionApp/Monitoring-Alerts-FunctionApp.zip'
