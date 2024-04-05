@@ -18,7 +18,8 @@ resources:
       endpoint: SkillsFundingAgency
 
 stages:
-- stage: Build and Unit Tests
+- stage: Build_Unit_Tests
+  displayName: 'Build and Unit Tests'
   jobs:
   - template: pipeline-templates/job/codebuild.yml
   - template: pipeline-templates/job/unittests.yml
