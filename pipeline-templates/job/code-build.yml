@@ -24,13 +24,13 @@ jobs:
     displayName: 'dotnet restore'
     inputs:
       command: restore
-      projects: src/SFA.DAS.Payments.Monitoring.Alerts.Function/SFA.DAS.Payments.Monitoring.Alerts.Function.csproj
+      projects: ${{ parameters.TargetProjects }}
       vstsFeed: '1d5deb2d-cf8b-4bb1-b147-d13bc246e3f4'
 
   - task: DotNetCoreCLI@2
     displayName: 'dotnet build'
     inputs:
-      projects: src/SFA.DAS.Payments.Monitoring.Alerts.Function/SFA.DAS.Payments.Monitoring.Alerts.Function.csproj
+      projects: ${{ parameters.TargetProjects }}
       arguments: '--configuration $(BuildConfiguration)'
 
   - task: DotNetCoreCLI@2
