@@ -1,50 +1,143 @@
 ﻿using System;
 using System.Collections.Generic;
+using SFA.DAS.Payments.Monitoring.Alerts.Function.Models;
 
 namespace SFA.DAS.Payments.Monitoring.Alerts.Function.Helpers
 {
     public class SlackAlertHelper : ISlackAlertHelper
     {
-        public List<object> BuildSlackPayload(string alertEmoji,
-                                              DateTime timestamp,
-                                              string jobId,
-                                              string academicYear,
-                                              string collectionPeriod,
-                                              string alertTitle,
-                                              string appInsightsSearchResultsUiLink)
+        public List<Block> BuildSlackPayload(AlertParameters alertParameters)
         {
-            return new List<object>
+            var blocks = new List<Block>
             {
-                new
+                new Block
                 {
-                    type ="header",
-                    text = new
+                    Type = "header",
+                    Text = new BlockData
                     {
-                        type= "plain_text",
-                        text = $"{alertEmoji} {alertTitle}."
+                        Type = "plain_text",
+                        Text = $"{alertParameters.AlertEmoji} {alertParameters.AlertTitle}."
                     }
                 },
-                new
+                new Block
                 {
-                    type = "section",
-                    text = new
+                    Type = "section",
+                    Text = new BlockData
                     {
-                        text = $"<{appInsightsSearchResultsUiLink}|View in Azure App Insights>",
-                        type = "mrkdwn"
+                        Type = "mrkdwn",
+                        Text = $"<{alertParameters.AppInsightsSearchResultsUiLink}|View in Azure App Insights>"
                     },
-                    fields = new List<object>
+                    Fields = new List<BlockData>
                     {
-                        new { type = "mrkdwn", text = "*Timestamp*" },
-                        new { type = "mrkdwn", text = "*Job*" },
-                        new { type = "plain_text", text = timestamp.ToString("f") },
-                        new { type = "plain_text", text = jobId },
-                        new { type = "mrkdwn", text = "*Academic Year*" },
-                        new { type = "mrkdwn", text = "*Collection Period*" },
-                        new { type = "plain_text", text = academicYear },
-                        new { type = "plain_text", text = collectionPeriod },
+                        new BlockData { Type = "mrkdwn", Text = "*Timestamp*" },
+                        new BlockData { Type = "mrkdwn", Text = "*Job*" },
+                        new BlockData { Type = "plain_text", Text = alertParameters.Timestamp.ToString("f") },
+                        new BlockData { Type = "plain_text", Text = alertParameters.JobId },
+                        new BlockData { Type = "mrkdwn", Text = "*Academic Year*" },
+                        new BlockData { Type = "mrkdwn", Text = "*Collection Period*" },
+                        new BlockData { Type = "plain_text", Text = alertParameters.AcademicYear },
+                        new BlockData { Type = "plain_text", Text = alertParameters.CollectionPeriod }
                     }
                 }
             };
+
+            if (!string.IsNullOrWhiteSpace(alertParameters.YearToDatePayments) 
+                || !string.IsNullOrWhiteSpace(alertParameters.CollectionPeriodPayments) 
+                || !string.IsNullOrWhiteSpace(alertParameters.NumberOfLearners)
+                || !string.IsNullOrWhiteSpace(alertParameters.AccountedForPayments))
+            {
+                var optionalBlock = AddOptionalBlockFields(alertParameters.CollectionPeriodPayments, alertParameters.YearToDatePayments, alertParameters.NumberOfLearners, alertParameters.AccountedForPayments);
+
+                blocks.Add(optionalBlock);
+            }
+
+            return blocks;
+        }
+
+        private static Block AddOptionalBlockFields(string collectionPeriodPayments, string yearToDatePayments, string numberOfLearners, string accountedForPayments)
+        {
+            var optionalBlock = new Block
+            {
+                Type = "section",
+                Text = new BlockData
+                {
+                    Type = "mrkdwn",
+                    Text = " "
+                },
+                Fields = new List<BlockData>()
+            };
+
+            if (!string.IsNullOrWhiteSpace(yearToDatePayments))
+            {
+                optionalBlock.Fields.Add(new BlockData { Type = "mrkdwn", Text = "*Previous Payments Year To Date*" });
+            }
+
+            if (!string.IsNullOrWhiteSpace(collectionPeriodPayments))
+            {
+                optionalBlock.Fields.Add(new BlockData { Type = "mrkdwn", Text = "*Collection Period Payments*" });
+            }
+
+            if (!string.IsNullOrWhiteSpace(yearToDatePayments))
+            {
+                var yearTodatePaymentsText = string.Empty;
+                try
+                {
+                    var yearToDatePaymentsValue = Convert.ToDecimal(RemoveInvalidCharacters(yearToDatePayments));
+                    yearTodatePaymentsText = yearToDatePaymentsValue.ToString("N2");
+                }
+                catch (FormatException)
+                {
+                    yearTodatePaymentsText = RemoveInvalidCharacters(yearToDatePayments);
+                }
+                optionalBlock.Fields.Add(new BlockData { Type = "plain_text", Text = $"£{yearTodatePaymentsText}" });
+            }
+
+            if (!string.IsNullOrWhiteSpace(collectionPeriodPayments))
+            {
+                var collectionPeriodPaymentsText = string.Empty;
+                try
+                {
+                    var collectionPeriodPaymentsValue = Convert.ToDecimal(RemoveInvalidCharacters(collectionPeriodPayments));
+                    collectionPeriodPaymentsText = collectionPeriodPaymentsValue.ToString("N2");
+                }
+                catch (FormatException)
+                {
+                    collectionPeriodPaymentsText = RemoveInvalidCharacters(collectionPeriodPayments);
+                }
+                optionalBlock.Fields.Add(new BlockData { Type = "plain_text", Text = $"£{collectionPeriodPaymentsText}" });
+            }
+
+            if (!string.IsNullOrEmpty(numberOfLearners))
+            {
+                optionalBlock.Fields.Add(new BlockData { Type = "mrkdwn", Text = "*In Learning*" });
+            }
+
+            if (!string.IsNullOrEmpty(accountedForPayments))
+            {
+                optionalBlock.Fields.Add(new BlockData { Type = "mrkdwn", Text = "*Accounted For Payments*" });
+            }
+            
+            if (!string.IsNullOrEmpty(numberOfLearners))
+            {
+                optionalBlock.Fields.Add(new BlockData { Type = "plain_text", Text = RemoveInvalidCharacters(numberOfLearners) });
+            }
+
+            if (!string.IsNullOrWhiteSpace(accountedForPayments))
+            {
+                var accountedForPaymentsText = string.Empty;
+                try
+                {
+                    var accountedForPaymentsValue = Convert.ToDecimal(RemoveInvalidCharacters(accountedForPayments));
+                    accountedForPaymentsText = accountedForPaymentsValue.ToString("N2");
+                }
+                catch (FormatException)
+                {
+                    accountedForPaymentsText = RemoveInvalidCharacters(accountedForPayments);
+                }
+                optionalBlock.Fields.Add(new BlockData { Type = "plain_text", Text = $"£{accountedForPaymentsText}" });
+            }
+
+            return optionalBlock;
         }
 
         public string GetEmoji(string severity)
@@ -56,6 +149,11 @@ namespace SFA.DAS.Payments.Monitoring.Alerts.Function.Helpers
                 "Sev3" => ":+1:",
                 _ => string.Empty,
             };
+        }
+
+        private static string RemoveInvalidCharacters(string text)
+        {
+            return text.Replace("\"", "");
         }
 
         public Dictionary<string, string> ExtractAlertVariables(dynamic customMeasurements, dynamic customDimensions, DateTime timestamp)
@@ -95,15 +193,23 @@ namespace SFA.DAS.Payments.Monitoring.Alerts.Function.Helpers
                                        customMeasurements["RequiredPaymentsTotal"].ToString() :
                                        string.Empty;
 
-            string colectionPeriodPayments = customMeasurements.ContainsKey("PaymentsTotal") ?
+            string collectionPeriodPayments = customMeasurements.ContainsKey("PaymentsTotal") ?
                                               customMeasurements["PaymentsTotal"].ToString() :
-                                              string.Empty;
+                                              "n/a";
 
             string yearToDatePayments = customMeasurements.ContainsKey("YearToDatePaymentsTotal") ?
                                          customMeasurements["YearToDatePaymentsTotal"].ToString() :
                                             customMeasurements.ContainsKey("PaymentsYearToDateTotal") ?
                                             customMeasurements["PaymentsYearToDateTotal"].ToString() :
-                                            string.Empty;
+                                            "n/a";
+
+            string numberOfLearners = customMeasurements.ContainsKey("InLearning") ?
+                                       customMeasurements["InLearning"].ToString() :
+                                       "n/a";
+
+            string accountedForPayments = customMeasurements.ContainsKey("AccountedForPayments") ?
+                                            customMeasurements["AccountedForPayments"].ToString() :
+                                            "n/a";
 
             return new Dictionary<string, string>
             {
@@ -120,8 +226,10 @@ namespace SFA.DAS.Payments.Monitoring.Alerts.Function.Helpers
                 { "DifferenceTotal", differenceTotal },
                 { "HeldBackCompletionPayments", heldBackCompletionPayments },
                 { "RequiredPayments", requiredPayments },
-                { "CollectionPeriodPayments", colectionPeriodPayments },
-                { "YearToDatePayments", yearToDatePayments }
+                { "CollectionPeriodPayments", collectionPeriodPayments },
+                { "YearToDatePayments", yearToDatePayments },
+                { "NumberOfLearners", numberOfLearners },
+                { "AccountedForPayments", accountedForPayments }
             };
         }
 

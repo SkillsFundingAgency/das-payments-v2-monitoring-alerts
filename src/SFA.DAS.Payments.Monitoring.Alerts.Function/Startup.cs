@@ -1,8 +1,10 @@
 ﻿using System;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Polly;
@@ -23,6 +25,10 @@ namespace SFA.DAS.Payments.Monitoring.Alerts.Function
 
         public override void Configure(IFunctionsHostBuilder builder)
         {
+            #if DEBUG
+            SetupDevelopmentEnvironmentVariables(builder);
+            #endif
+
             builder.Services.AddLogging();
 
             AddAppInsightsClient(builder);
@@ -72,6 +78,15 @@ namespace SFA.DAS.Payments.Monitoring.Alerts.Function
         private static string GetEnvironmentVariable(string variableName)
         {
             return Environment.GetEnvironmentVariable(variableName, EnvironmentVariableTarget.Process);
+        }
+        
+        private void SetupDevelopmentEnvironmentVariables(IFunctionsHostBuilder builder)
+        {
+            var configBuilder = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("local.settings.json", optional: true)
+                .AddEnvironmentVariables()
+                .Build();
         }
     }
 }

@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using SFA.DAS.Payments.Monitoring.Alerts.Function.Helpers;
 using SFA.DAS.Payments.Monitoring.Alerts.Function.JsonHelpers;
+using SFA.DAS.Payments.Monitoring.Alerts.Function.Models;
 using SFA.DAS.Payments.Monitoring.Alerts.Function.TypedClients;
 
 namespace SFA.DAS.Payments.Monitoring.Alerts.Function.Services
@@ -14,7 +17,7 @@ namespace SFA.DAS.Payments.Monitoring.Alerts.Function.Services
         private readonly ISlackAlertHelper _slackAlertHelper;
         private readonly ISlackClient _slackClient;
         private readonly IDynamicJsonDeserializer _deserializer;
-
+        
         public SlackService(IDynamicJsonDeserializer deserializer,
                             ISlackAlertHelper slackAlertHelper,
                             ISlackClient slackClient,
@@ -23,7 +26,7 @@ namespace SFA.DAS.Payments.Monitoring.Alerts.Function.Services
             _deserializer = deserializer;
             _slackAlertHelper = slackAlertHelper;
             _appInsightsClient = appInsightsClient;
-            _slackClient = slackClient; 
+            _slackClient = slackClient;
         }
 
         public async Task PostSlackAlert(string appInsightsAlertPayload, string slackChannelUri)
@@ -59,21 +62,34 @@ namespace SFA.DAS.Payments.Monitoring.Alerts.Function.Services
                                           string appInsightsSearchResultsUiLink,
                                           DateTime timestamp)
         {
-            string alertTitle = _slackAlertHelper.GetSlackAlertTitle(alertDescription, alertVariables);
-            
-            var slackPayload = new
+            var alertParameters = new AlertParameters
             {
-                text = alertTitle,
-                blocks = _slackAlertHelper.BuildSlackPayload(alertEmoji,
-                                       timestamp,
-                                       alertVariables["JobId"],
-                                       alertVariables["AcademicYear"],
-                                       alertVariables["CollectionPeriod"],
-                                       alertTitle,
-                                       appInsightsSearchResultsUiLink)
+                AlertEmoji = alertEmoji,
+                Timestamp = timestamp,
+                JobId = alertVariables["JobId"],
+                AcademicYear = alertVariables["AcademicYear"],
+                CollectionPeriod = alertVariables["CollectionPeriod"],
+                CollectionPeriodPayments = alertVariables["CollectionPeriodPayments"],
+                YearToDatePayments = alertVariables["YearToDatePayments"],
+                NumberOfLearners = alertVariables["NumberOfLearners"],
+                AccountedForPayments = alertVariables["AccountedForPayments"],
+                AlertTitle = _slackAlertHelper.GetSlackAlertTitle(alertDescription, alertVariables),
+                AppInsightsSearchResultsUiLink = appInsightsSearchResultsUiLink
             };
 
-            await _slackClient.PostAsJsonAsync(slackChannelUri, slackPayload);
+            var slackPayload = new SlackPayload
+            {
+                Blocks = _slackAlertHelper.BuildSlackPayload(alertParameters)
+            };
+            
+            var serializeOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+            var jsonData = JsonSerializer.Serialize(slackPayload, serializeOptions);
+
+            await _slackClient.PostAsJsonAsync(slackChannelUri, jsonData);
         }
     }
 }
