@@ -1,7 +1,7 @@
 jobs:
 - job: UnitTests
   pool:
-    name: SLD BUILD Pool - CD
+    name: DCT Build Pool
     workspace:
       clean: all
   
