@@ -1,46 +1,52 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using Microsoft.Azure.Functions.Extensions.DependencyInjection;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Extensions.Http;
-using SFA.DAS.Payments.Monitoring.Alerts.Function;
 using SFA.DAS.Payments.Monitoring.Alerts.Function.Helpers;
 using SFA.DAS.Payments.Monitoring.Alerts.Function.JsonHelpers;
 using SFA.DAS.Payments.Monitoring.Alerts.Function.Services;
 using SFA.DAS.Payments.Monitoring.Alerts.Function.TypedClients;
-
-[assembly: FunctionsStartup(typeof(Startup))]
-
 namespace SFA.DAS.Payments.Monitoring.Alerts.Function
 {
-    public class Startup : FunctionsStartup
+    public class Program
     {
         private static readonly int _numberOfRetries = 4;
 
-        public override void Configure(IFunctionsHostBuilder builder)
+        public static void Main()
         {
-            builder.Services.AddLogging();
-
-            AddAppInsightsClient(builder);
-
-            builder.Services
-                .AddHttpClient<ISlackClient, SlackClient>(x =>
+            var host = new HostBuilder()
+                .ConfigureFunctionsWebApplication()
+                .ConfigureServices(services =>
                 {
-                    x.BaseAddress = new Uri(GetEnvironmentVariable("SlackBaseUrl"));
-                });
+                    services.AddApplicationInsightsTelemetryWorkerService();
+                    services.ConfigureFunctionsApplicationInsights();
+                    //services.AddLogging(); I think telemetry is already this, need to double check?
+                    AddAppInsightsClient(services);
 
-            builder.Services.AddTransient<IDynamicJsonDeserializer, DynamicJsonDeserializer>();
-            builder.Services.AddTransient<ISlackAlertHelper, SlackAlertHelper>();
-            builder.Services.AddTransient<ISlackService, SlackService>();
+                    services
+                        .AddHttpClient<ISlackClient, SlackClient>(x =>
+                        {
+                            x.BaseAddress = new Uri(GetEnvironmentVariable("SlackBaseUrl"));
+                        });
+
+                    services.AddTransient<IDynamicJsonDeserializer, DynamicJsonDeserializer>();
+                    services.AddTransient<ISlackAlertHelper, SlackAlertHelper>();
+                    services.AddTransient<ISlackService, SlackService>();
+
+                })
+                .Build();
+            host.Run();
         }
 
-        private static void AddAppInsightsClient(IFunctionsHostBuilder builder)
+        private static void AddAppInsightsClient(IServiceCollection services)
         {
-            builder.Services
+            services
                 .AddHttpClient<IAppInsightsClient, AppInsightsClient>(x =>
                 {
                     var appInsightsAPIKeyHeader = GetEnvironmentVariable("AppInsightsAuthHeader");
