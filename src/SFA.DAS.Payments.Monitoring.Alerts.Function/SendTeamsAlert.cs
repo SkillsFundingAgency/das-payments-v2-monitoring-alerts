@@ -1,11 +1,11 @@
 using System;
 using System.IO;
+using System.Net;
 using System.Threading.Tasks;
-using System.Web.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 using SFA.DAS.Payments.Monitoring.Alerts.Function.Services;
 
@@ -14,44 +14,46 @@ namespace SFA.DAS.Payments.Monitoring.Alerts.Function
     public class SendTeamsAlert
     {
         private readonly ITeamsService _teamsService;
+        private readonly ILogger<SendTeamsAlert> _logger;
 
-        public SendTeamsAlert(ITeamsService teamsService)
+        public SendTeamsAlert(ITeamsService teamsService, ILogger<SendTeamsAlert> logger)
         {
             _teamsService = teamsService;
+            _logger = logger;
         }
 
-        [FunctionName("HttpTrigger1")]
+        [Function("HttpTrigger1")]
         public async Task<IActionResult> SendToChannelOne(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req)
         {
             var teamsWebhookURL =
                 Environment.GetEnvironmentVariable("TeamsWebhookURL", EnvironmentVariableTarget.Process);
 
-            log.LogInformation("HttpTrigger1 function processed a request.");
+            _logger.LogInformation("HttpTrigger1 function processed a request.");
 
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 
-            log.LogInformation($"Request: {requestBody}.");
+            _logger.LogInformation($"Request: {requestBody}.");
 
-            var result = await _teamsService.PostTeamsAlert(requestBody, teamsWebhookURL,log);
-
-            return result == null? new OkObjectResult("") : new OkObjectResult(result.exception + "\n" + result.innerException);
+            var result = await _teamsService.PostTeamsAlert(requestBody, teamsWebhookURL, _logger);
+            return result == null ? new OkObjectResult("") : new OkObjectResult(result.exception + "\n" + result.innerException);
+        
         }
 
-        [FunctionName("HttpTrigger2")]
+        [Function("HttpTrigger2")]
         public async Task<IActionResult> SendToChannelTwo(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req)
         {
             var teamsWebhookURL =
                 Environment.GetEnvironmentVariable("TeamsWebhookURL2", EnvironmentVariableTarget.Process);
 
-            log.LogInformation("HttpTrigger2 function processed a request.");
+            _logger.LogInformation("HttpTrigger2 function processed a request.");
 
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 
-            log.LogInformation($"Request: {requestBody}.");
+            _logger.LogInformation($"Request: {requestBody}.");
 
-            await _teamsService.PostTeamsAlert(requestBody, teamsWebhookURL,log);
+            await _teamsService.PostTeamsAlert(requestBody, teamsWebhookURL,_logger);
 
             return new OkObjectResult("");
         }
