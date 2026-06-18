@@ -26,7 +26,6 @@ namespace SFA.DAS.Payments.Monitoring.Alerts.Function
                 {
                     services.AddApplicationInsightsTelemetryWorkerService();
                     services.ConfigureFunctionsApplicationInsights();
-                    //services.AddLogging(); I think telemetry is already this, need to double check?
                     AddAppInsightsClient(services);
 
                     services
