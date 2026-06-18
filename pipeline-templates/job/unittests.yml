@@ -10,6 +10,7 @@ jobs:
   variables:
     BuildConfiguration: 'Release'
 
+  steps:
   
 
   - task: DotNetCoreCLI@2
