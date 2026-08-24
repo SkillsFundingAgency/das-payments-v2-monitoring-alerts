@@ -35,6 +35,7 @@ jobs:
       projects: src/SFA.DAS.Payments.Monitoring.Alerts.Function/SFA.DAS.Payments.Monitoring.Alerts.Function.csproj
       arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory)\Monitoring-Alerts-FunctionApp'
       modifyOutputPath: false
+      zipAfterPublish: false
 
   - task: PublishPipelineArtifact@1
     displayName: 'Publish Pipeline Artifact'
