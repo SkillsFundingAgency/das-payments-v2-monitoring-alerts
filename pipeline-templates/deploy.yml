@@ -3,13 +3,13 @@ parameters:
   SolutionBaseName:
   Environment:
   ArtifactName:
-  Pool: DCT
 
 jobs:
 - deployment: Deploy${{ replace(parameters.SolutionBaseName, '.', '') }}
   pool:
-    name: ${{ parameters.Pool }}
+    name: DCT
     demands:
+    - Cmd
     - ReleaseEnvironment -equals ${{ parameters.Environment }}
   environment: ${{ parameters.Environment }}
   workspace:
