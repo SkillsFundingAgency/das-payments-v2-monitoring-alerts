@@ -3,7 +3,7 @@ parameters:
 jobs:
 - job: CodeBuild
   pool:
-    name: DCT
+    name: SLD BUILD Pool - CD
     #demands: LATEST_DOTNET_VERSION
     workspace:
       clean: all
@@ -11,12 +11,6 @@ jobs:
      
   - group: BUILD Management Resources
   steps:
-
-  - task: UseDotNet@2
-    displayName: 'Use .NET Core sdk 6.0.x'
-    inputs:
-      version: 6.0.x
-      performMultiLevelLookup: true
 
   - template: /azure-pipelines-templates/build/step/gitversion.yml
 
@@ -41,6 +35,7 @@ jobs:
       projects: src/SFA.DAS.Payments.Monitoring.Alerts.Function/SFA.DAS.Payments.Monitoring.Alerts.Function.csproj
       arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory)\Monitoring-Alerts-FunctionApp'
       modifyOutputPath: false
+      zipAfterPublish: false
 
   - task: PublishPipelineArtifact@1
     displayName: 'Publish Pipeline Artifact'
