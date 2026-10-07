@@ -33,7 +33,7 @@ jobs:
       command: publish
       publishWebProjects: false
       projects: src/SFA.DAS.Payments.Monitoring.Alerts.Function/SFA.DAS.Payments.Monitoring.Alerts.Function.csproj
-      arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory)\Monitoring-Alerts-FunctionApp'
+      arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory)\Monitoring-Alerts-FunctionApp --no-self-contained'
       modifyOutputPath: false
       zipAfterPublish: false
 
