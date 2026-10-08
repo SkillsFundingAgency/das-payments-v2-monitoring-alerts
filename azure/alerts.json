@@ -1,0 +1,63 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "dataFactoryName": {
+      "type": "string"
+    },
+    "dataFactoryResourceGroupName": {
+      "type": "string"
+    },
+    "actionGroupName": {
+      "type": "string"
+    },
+    "actionGroupResourceGroupName": {
+      "type": "string"
+    }
+  },
+  "resources": [
+    {
+      "apiVersion": "2018-03-01",
+      "name": "data-factory",
+      "type": "Microsoft.Insights/metricAlerts",
+      "location": "global",
+      "properties": {
+        "description": "CleanupRedunantOperationalData pipeline failed",
+        "severity": 2,
+        "enabled": true,
+        "scopes": [
+          "[resourceId(parameters('dataFactoryResourceGroupName'), 'Microsoft.DataFactory/factories', parameters('dataFactoryName'))]"
+        ],
+        "evaluationFrequency": "PT1M",
+        "windowSize": "PT5M",
+        "criteria": {
+            "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+            "allOf": [
+                {
+                    "name": "FailedPipelineRuns",
+                    "metricName": "PipelineFailedRuns",
+                    "metricNamespace": "Microsoft.DataFactory/factories",
+                    "criterionType": "StaticThresholdCriterion",
+                    "dimensions": [
+                        {
+                            "name": "Name",
+                            "operator": "Include",
+                            "values": ["CleanupRedundantOperationalData"]
+                        }
+                    ],
+                    "operator": "GreaterThan",
+                    "threshold": 0,
+                    "timeAggregation": "Total"
+                }
+            ]
+        },
+        "autoMitigate": true,
+        "actions": [
+          {
+            "actionGroupId": "[resourceId(parameters('actionGroupResourceGroupName'), 'Microsoft.Insights/actionGroups', parameters('actionGroupName'))]"
+          }
+        ]
+      }    
+    }
+  ]
+}

@@ -64,6 +64,21 @@ jobs:
               appInsightsInstrumentationKey: $(AppInsightsInstrumentationKey)
               applicationInsightsConnectionString: $(ApplicationInsightsConnectionString)
 
+      - {{ if eq(parameters.Environment, 'PD') }}:
+        - task: AzureResourceManagerTemplateDeployment@3
+          displayName: 'Deploy ADF Alerts'
+          inputs:
+            deploymentScope: 'Resource Group'
+            azureResourceManagerConnection: ${{ parameters.ServiceConnection }}
+            subscriptionId: $(SubscriptionId)
+            resourceGroupName: $(ResourceGroupName)
+            location: $(ResourceGroupLocation)
+            templateLocation: 'Linked artifact'
+            csmFile: $(Build.SourcesDirectory)/das-payments-v2-monitoring-alerts/azure/alerts.json
+            csmParametersFile: $(Build.SourcesDirectory)/das-payments-v2-monitoring-alerts/azure/alerts.parameters.json
+            overrideParameters: '-dataFactoryName "$(DataFactoryName)" -dataFactoryResourceGroupName "$(DataFactoryResourceGroupName)" -actionGroupName "$(ActionGroupName)" -actionGroupResourceGroupName "$(ActionGroupResourceGroupName)"'
+            deploymentMode: 'Incremental'
+
         - task: PowerShell@2
           displayName: 'Verify ${{ parameters.ArtifactName }} has host.json at its root'
           inputs:
