@@ -18,11 +18,11 @@
   "resources": [
     {
       "apiVersion": "2018-03-01",
-      "name": "data-factory",
+      "name": "ADF CleanupRedundantOperationalData Failed",
       "type": "Microsoft.Insights/metricAlerts",
       "location": "global",
       "properties": {
-        "description": "CleanupRedunantOperationalData pipeline failed",
+        "description": "CleanupRedundantOperationalData pipeline failed",
         "severity": 2,
         "enabled": true,
         "scopes": [
