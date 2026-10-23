@@ -14,8 +14,6 @@ var host = new HostBuilder()
     .ConfigureFunctionsWebApplication()
     .ConfigureServices(services =>
     {
-        services.AddLogging();
-
         // AppInsightsClient registration
         services
             .AddHttpClient<IAppInsightsClient, AppInsightsClient>(x =>
@@ -44,21 +42,13 @@ var host = new HostBuilder()
 
 host.Run();
 
-static IAsyncPolicy<HttpResponseMessage> GetDefaultRetryPolicy()
-{
-    const int numberOfRetries = 4;
-    return HttpPolicyExtensions
+
+static IAsyncPolicy<HttpResponseMessage> GetDefaultRetryPolicy() =>
+    HttpPolicyExtensions
         .HandleTransientHttpError()
         .OrResult(msg => msg.StatusCode == HttpStatusCode.NotFound)
-        .WaitAndRetryAsync(
-            numberOfRetries,
-            retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
-            (outcome, timespan, retryAttempt, context) =>
-            {
-            });
-}
+        .WaitAndRetryAsync(4, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
 
-static string GetEnvironmentVariable(string variableName)
-{
-    return Environment.GetEnvironmentVariable(variableName, EnvironmentVariableTarget.Process);
-}
+
+static string GetEnvironmentVariable(string variableName) =>
+    Environment.GetEnvironmentVariable(variableName, EnvironmentVariableTarget.Process);

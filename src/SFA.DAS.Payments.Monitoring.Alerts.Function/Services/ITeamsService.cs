@@ -5,6 +5,6 @@ namespace SFA.DAS.Payments.Monitoring.Alerts.Function.Services
 {
     public interface ITeamsService
     {
-        Task<dynamic> PostTeamsAlert(string appInsightsAlertPayload, string teamsWebhookURL, ILogger log);
+        Task<dynamic> PostTeamsAlert(string appInsightsAlertPayload, string teamsWebhookURL);
     }
 }
