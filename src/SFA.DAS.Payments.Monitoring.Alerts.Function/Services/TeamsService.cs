@@ -16,19 +16,22 @@ namespace SFA.DAS.Payments.Monitoring.Alerts.Function.Services
         private readonly ITeamsAlertHelper _teamsAlertHelper;
         private readonly ITeamsClient _teamsClient;
         private readonly IDynamicJsonDeserializer _deserializer;
+        private readonly ILogger<TeamsService> _logger;
 
         public TeamsService(IDynamicJsonDeserializer deserializer,
                             ITeamsAlertHelper teamsAlertHelper,
                             ITeamsClient teamsClient,
-                            IAppInsightsClient appInsightsClient)
+                            IAppInsightsClient appInsightsClient,
+                            ILogger<TeamsService> logger)
         {
             _deserializer = deserializer;
             _teamsAlertHelper = teamsAlertHelper;
             _appInsightsClient = appInsightsClient;
             _teamsClient = teamsClient;
+            _logger = logger;
         }
 
-        public async Task<dynamic> PostTeamsAlert(string appInsightsAlertPayload, string teamsWebhookURL, ILogger log)
+        public async Task<dynamic> PostTeamsAlert(string appInsightsAlertPayload, string teamsWebhookURL)
         {
             try
             {
@@ -51,11 +54,17 @@ namespace SFA.DAS.Payments.Monitoring.Alerts.Function.Services
                         var customDimensions = JsonSerializer.Deserialize<Dictionary<string, string>>(row[3]);
                         var customMeasurements = JsonSerializer.Deserialize<Dictionary<string, double>>(row[4]);
                         DateTime timestamp = DateTime.Parse(row[0]);
-                        Dictionary<string, string> alertVariables =
-                            _teamsAlertHelper.ExtractAlertVariables(customMeasurements, customDimensions, timestamp);
+                        Dictionary<string, string> alertVariables = _teamsAlertHelper.ExtractAlertVariables(customMeasurements, customDimensions, timestamp);
                         string alertDescription = alert.data.essentials.description;
-                        await PostTeamsAlert(alertVariables, teamsWebhookURL, alertDescription, alertEmoji, alertColour,
-                            appInsightsSearchResultsUiLink, timestamp);
+
+                        await PostTeamsAlert(
+                            alertVariables,
+                            teamsWebhookURL,
+                            alertDescription,
+                            alertEmoji,
+                            alertColour,
+                            appInsightsSearchResultsUiLink,
+                            timestamp);
                     }
                 }
 
@@ -63,7 +72,8 @@ namespace SFA.DAS.Payments.Monitoring.Alerts.Function.Services
             }
             catch (Exception ex)
             {
-                log.LogError("Error while processing app insight payload - " + ex.Message);
+                _logger.LogError(ex, "Error while processing Application Insights alert payload.");
+
                 return new
                 {
                     exception = ex.Message,
